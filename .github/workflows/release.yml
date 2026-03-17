@@ -72,7 +72,18 @@ jobs:
         run: ./gradlew clean publish
 
       - name: JReleaser Full Release
-        run: ./gradlew jreleaserFullRelease --no-configuration-cache --stacktrace --info
+        run: |
+          for attempt in 1 2 3; do
+            echo "JReleaser attempt $attempt"
+            ./gradlew jreleaserFullRelease --no-configuration-cache --stacktrace --info && exit 0
+
+            if [ "$attempt" -lt 3 ]; then
+              echo "JReleaser failed, retrying in 30 seconds..."
+              sleep 30
+            fi
+          done
+
+          exit 1
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.MAVENCENTRAL_USERNAME }}
