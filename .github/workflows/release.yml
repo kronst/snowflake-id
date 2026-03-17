@@ -54,23 +54,25 @@ jobs:
           sed -i "s/^version=.*/version=$NEW_VERSION/" gradle.properties
           
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "RELEASE_BRANCH=release/$NEW_VERSION-${{ github.run_id }}" >> $GITHUB_ENV
 
       - name: Run Tests
         run: ./gradlew test -PskipReports
 
-      - name: Commit & Tag
+      - name: Commit Release Version
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$RELEASE_BRANCH"
           git add gradle.properties
           git commit -m "Release $NEW_VERSION [skip ci]"
-          git push origin HEAD:main
+          git push origin HEAD:"$RELEASE_BRANCH"
 
       - name: Build Artifacts
         run: ./gradlew clean publish
 
       - name: JReleaser Full Release
-        run: ./gradlew jreleaserFullRelease --no-configuration-cache
+        run: ./gradlew jreleaserFullRelease --no-configuration-cache --stacktrace --info
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.MAVENCENTRAL_USERNAME }}
@@ -78,3 +80,13 @@ jobs:
           JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_SECRET_KEY }}
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Update Main
+        if: success()
+        run: |
+          git push origin "$RELEASE_BRANCH":main
+
+      - name: Cleanup Release Branch
+        if: always()
+        run: |
+          git push origin --delete "$RELEASE_BRANCH" || true
