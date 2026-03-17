@@ -1,12 +1,13 @@
 plugins {
     id("snowflake-id.library")
-    id("org.jetbrains.kotlin.plugin.spring")
+    kotlin("plugin.spring")
+    alias(libs.plugins.springBoot)
+    alias(libs.plugins.springDependencyManagement)
 }
 
 dependencies {
-    implementation(platform(libs.springBootDependencies))
     implementation("org.springframework.boot:spring-boot-autoconfigure")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation(kotlin("reflect"))
 
     api(project(":snowflake-id-core"))
 
